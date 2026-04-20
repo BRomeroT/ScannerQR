@@ -1,3 +1,5 @@
 <Solution>
-  <Project Path="Codeland.ScannerQR/Codeland.ScannerQR.csproj" />
+  <Folder Name="/Blazor/">
+    <Project Path="Blazor/Codeland.ScannerQR/Codeland.ScannerQR.csproj" />
+  </Folder>
 </Solution>
