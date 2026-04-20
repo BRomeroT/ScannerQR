@@ -18,7 +18,7 @@ public partial class QRScanner : IAsyncDisposable
     private double _zoomMin = 1;
     private double _zoomMax = 1;
 
-    // ── Parameters ──────────────────────────────────────────────────────────
+    #region Parameters 
 
     [Parameter]
     public bool AutoStart { get; set; } = true;
@@ -53,7 +53,9 @@ public partial class QRScanner : IAsyncDisposable
     [Parameter]
     public string? Height { get; set; }
 
-    // ── Events ───────────────────────────────────────────────────────────────
+    #endregion
+
+    #region Events
 
     [Parameter]
     public EventCallback<double> OnZoomChanged { get; set; }
@@ -64,7 +66,9 @@ public partial class QRScanner : IAsyncDisposable
     [Parameter]
     public EventCallback<string> OnScanStatus { get; set; }
 
-    // ── Computed CSS helpers ─────────────────────────────────────────────────
+    #endregion
+
+    #region Computed CSS helpers 
 
     private string _containerClass =>
         FullPage
@@ -106,7 +110,9 @@ public partial class QRScanner : IAsyncDisposable
 
     private string VideoStyle => string.Empty;
 
-    // ── Lifecycle ────────────────────────────────────────────────────────────
+    #endregion
+
+    #region Lifecycle 
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -118,7 +124,9 @@ public partial class QRScanner : IAsyncDisposable
         await Start();
     }
 
-    // ── Public methods ───────────────────────────────────────────────────────
+    #endregion
+
+    #region Public methods
 
     public async Task Start()
     {
@@ -149,7 +157,9 @@ public partial class QRScanner : IAsyncDisposable
         await JS.InvokeVoidAsync("qrScanner.setZoom", zoomValue);
     }
 
-    // ── Private handlers ─────────────────────────────────────────────────────
+    #endregion
+
+    #region Private handlers 
 
     private async Task HandleZoomInput(ChangeEventArgs e)
     {
@@ -199,4 +209,5 @@ public partial class QRScanner : IAsyncDisposable
 
         _dotRef?.Dispose();
     }
+    #endregion
 }

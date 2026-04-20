@@ -1,3 +1,16 @@
+/**
+ * <summary>
+ * Browser-side QR scanner module.
+ *
+ * Responsibilities:
+ * - Manage camera lifecycle (start/stop/restart)
+ * - Detect QR values using BarcodeDetector or jsQR fallback
+ * - Emit scan/zoom/status events to .NET via DotNetObjectReference
+ * - Handle pinch-to-zoom on touch devices
+ *
+ * Note: UI actions must be handled in Blazor (Home page/code-behind).
+ * </summary>
+ */
 window.qrScanner = (() => {
     let stream = null;
     let track = null;
@@ -24,12 +37,23 @@ window.qrScanner = (() => {
     let pinchStartDistance = null;
     let pinchStartZoom = null;
 
+    /**
+     * <summary>Gets Euclidean distance between two touch points.</summary>
+     * <param name="touchA">First touch.</param>
+     * <param name="touchB">Second touch.</param>
+     * <returns>Distance in pixels.</returns>
+     */
     function getTouchDistance(touchA, touchB) {
         const dx = touchA.clientX - touchB.clientX;
         const dy = touchA.clientY - touchB.clientY;
         return Math.sqrt((dx * dx) + (dy * dy));
     }
 
+    /**
+     * <summary>Sends a status message to .NET.</summary>
+     * <param name="message">Status text.</param>
+     * <returns>Promise resolved when callback completes.</returns>
+     */
     async function setStatus(message) {
         if (!dotNetRef) {
             return;
@@ -41,6 +65,13 @@ window.qrScanner = (() => {
         }
     }
 
+    /**
+     * <summary>
+     * Initializes the QR detection engine.
+     * Uses BarcodeDetector when available, otherwise jsQR fallback.
+     * </summary>
+     * <returns>True when a detector is available; otherwise false.</returns>
+     */
     async function createDetector() {
         useJsQr = false;
         detector = null;
@@ -59,6 +90,9 @@ window.qrScanner = (() => {
         return false;
     }
 
+    /**
+     * <summary>Binds pinch gesture handlers to video element.</summary>
+     */
     function bindPinch() {
         if (!video || pinchBound) {
             return;
@@ -71,6 +105,9 @@ window.qrScanner = (() => {
         pinchBound = true;
     }
 
+    /**
+     * <summary>Unbinds pinch gesture handlers from video element.</summary>
+     */
     function unbindPinch() {
         if (!video || !pinchBound) {
             return;
@@ -85,6 +122,9 @@ window.qrScanner = (() => {
         pinchStartZoom = null;
     }
 
+    /**
+     * <summary>Binds window/document lifecycle handlers.</summary>
+     */
     function bindLifecycle() {
         if (lifecycleBound) {
             return;
@@ -99,6 +139,9 @@ window.qrScanner = (() => {
         lifecycleBound = true;
     }
 
+    /**
+     * <summary>Unbinds window/document lifecycle handlers.</summary>
+     */
     function unbindLifecycle() {
         if (!lifecycleBound) {
             return;
@@ -113,6 +156,13 @@ window.qrScanner = (() => {
         lifecycleBound = false;
     }
 
+    /**
+     * <summary>
+     * Starts camera and detection pipeline when requested and allowed by page state.
+     * Safe to call repeatedly.
+     * </summary>
+     * <returns>Promise that completes when start flow finishes.</returns>
+     */
     async function ensureStarted() {
         if (!desiredRunning || isStarting || stream) {
             return;
@@ -194,6 +244,10 @@ window.qrScanner = (() => {
         }
     }
 
+    /**
+     * <summary>Runs one frame detection with jsQR fallback path.</summary>
+     * <returns>Detected QR value or empty string.</returns>
+     */
     function detectUsingJsQr() {
         if (!video || !ctx || !canvas || video.videoWidth <= 0 || video.videoHeight <= 0) {
             return "";
@@ -211,6 +265,13 @@ window.qrScanner = (() => {
         return result?.data ?? "";
     }
 
+    /**
+     * <summary>
+     * Main detection loop driven by requestAnimationFrame.
+     * Emits OnQrDetected for non-duplicate values.
+     * </summary>
+     * <returns>Promise used by async detection calls.</returns>
+     */
     async function detectLoop() {
         if (!stream || !video || (!detector && !useJsQr)) {
             return;
@@ -246,6 +307,9 @@ window.qrScanner = (() => {
         frameRequest = requestAnimationFrame(detectLoop);
     }
 
+    /**
+     * <summary>Stops frame loop and camera stream, and clears detector state.</summary>
+     */
     function stopStream() {
         if (frameRequest) {
             cancelAnimationFrame(frameRequest);
@@ -268,6 +332,11 @@ window.qrScanner = (() => {
         ctx = null;
     }
 
+    /**
+     * <summary>Applies zoom value to current camera track.</summary>
+     * <param name="zoom">Desired zoom level.</param>
+     * <returns>Promise resolved when constraints are applied.</returns>
+     */
     async function setZoom(zoom) {
         const value = Number(zoom);
 
@@ -285,6 +354,10 @@ window.qrScanner = (() => {
         }
     }
 
+    /**
+     * <summary>Touch start handler for pinch-to-zoom initialization.</summary>
+     * <param name="e">Touch event.</param>
+     */
     function onTouchStart(e) {
         if (!track || maxZoom <= minZoom || e.touches.length !== 2) {
             return;
@@ -294,6 +367,10 @@ window.qrScanner = (() => {
         pinchStartZoom = currentZoom;
     }
 
+    /**
+     * <summary>Touch move handler for pinch-to-zoom updates.</summary>
+     * <param name="e">Touch event.</param>
+     */
     function onTouchMove(e) {
         if (!track || maxZoom <= minZoom || e.touches.length !== 2 || !pinchStartDistance || !pinchStartZoom) {
             return;
@@ -307,19 +384,31 @@ window.qrScanner = (() => {
         void setZoom(nextZoom);
     }
 
+    /**
+     * <summary>Touch end/cancel handler that resets pinch state.</summary>
+     */
     function onTouchEnd() {
         pinchStartDistance = null;
         pinchStartZoom = null;
     }
 
+    /**
+     * <summary>Window blur handler that releases camera resources.</summary>
+     */
     function onWindowBlur() {
         stopStream();
     }
 
+    /**
+     * <summary>Window focus handler that attempts to restart scanning.</summary>
+     */
     function onWindowFocus() {
         void ensureStarted();
     }
 
+    /**
+     * <summary>Visibility change handler that stops/starts scanner by tab visibility.</summary>
+     */
     function onVisibilityChanged() {
         if (document.hidden) {
             stopStream();
@@ -329,10 +418,21 @@ window.qrScanner = (() => {
         void ensureStarted();
     }
 
+    /**
+     * <summary>Page leave handler that guarantees stream cleanup.</summary>
+     */
     function onPageLeave() {
         stopStream();
     }
 
+    /**
+     * <summary>
+     * Public API: starts scanner with lifecycle automation.
+     * </summary>
+     * <param name="ref">DotNetObjectReference exposing callback methods.</param>
+     * <param name="videoId">Target video element id.</param>
+     * <returns>Promise resolved when startup attempt completes.</returns>
+     */
     async function startAuto(ref, videoId) {
         dotNetRef = ref;
         video = document.getElementById(videoId);
@@ -349,6 +449,11 @@ window.qrScanner = (() => {
         await ensureStarted();
     }
 
+    /**
+     * <summary>
+     * Public API: disposes scanner resources and event handlers.
+     * </summary>
+     */
     function dispose() {
         desiredRunning = false;
         stopStream();
