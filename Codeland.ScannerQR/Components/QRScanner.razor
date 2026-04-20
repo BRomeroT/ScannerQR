@@ -1,0 +1,19 @@
+@namespace Codeland.QRScanner
+
+<div class="scanner-page">
+    <video id="@_videoElementId" class="scanner-video" autoplay playsinline muted></video>
+
+    @if (_zoomSupported)
+    {
+        <div class="scanner-overlay scanner-overlay-bottom">
+            <label class="scanner-zoom-label">Zoom: @ZoomValue.ToString("0.0")x</label>
+            <input class="scanner-zoom-range"
+                   type="range"
+                   min="@_zoomMin"
+                   max="@_zoomMax"
+                   step="0.1"
+                   value="@ZoomValue"
+                   @oninput="HandleZoomInput" />
+        </div>
+    }
+</div>

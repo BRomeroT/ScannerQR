@@ -1,0 +1,39 @@
+﻿@page "/"
+
+<PageTitle>Scan QR</PageTitle>
+
+<QRScanner @ref="_scannerRef"
+           AutoStart="@_autoStart"
+           QRValue="@_qrValue"
+           ZoomValue="@_zoomValue"
+           OnQRDetected="HandleQRDetected"
+           OnZoomChanged="HandleZoomChanged"
+           OnScanStatus="HandleScanStatus" />
+
+<div class="home-overlay-panel">
+    <div class="home-wireframe-group">
+        <button type="button" class="home-wireframe-btn" title="Start" @onclick="StartScanner">▷</button>
+        <button type="button" class="home-wireframe-btn" title="Stop" @onclick="StopScanner">□</button>
+        <button type="button" class="home-wireframe-btn" title="Scan" @onclick="ScanNow">⌾</button>
+        <button type="button" class="home-wireframe-btn" title="Zoom Out" @onclick="ZoomOut">－</button>
+        <button type="button" class="home-wireframe-btn" title="Zoom In" @onclick="ZoomIn">＋</button>
+    </div>
+
+    <div class="home-info-label"><strong>Properties</strong></div>
+    <div class="home-info-label">AutoStart: @_autoStart</div>
+    <div class="home-info-label">QRValue: @(_qrValue.Length == 0 ? "(empty)" : _qrValue)</div>
+    <div class="home-info-label">ZoomValue: @_zoomValue.ToString("0.0")</div>
+
+    <div class="home-info-label home-info-sep"><strong>Events</strong></div>
+    <div class="home-info-label">OnQRDetected: @(_eventQrDetected.Length == 0 ? "(none)" : _eventQrDetected)</div>
+    <div class="home-info-label">OnZoomChanged: @_eventZoomChanged</div>
+    <div class="home-info-label">OnScanStatus: @(_eventScanStatus.Length == 0 ? "(none)" : _eventScanStatus)</div>
+</div>
+
+<dialog id="qrAlertDialog" class="qr-alert-dialog" open="@_showQrDialog">
+    <div class="qr-alert-form">
+        <h4>QR detected</h4>
+        <p>@_qrValue</p>
+        <button type="button" class="btn btn-primary" @onclick="CloseQrDialog">OK</button>
+    </div>
+</dialog>
