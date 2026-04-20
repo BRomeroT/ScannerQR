@@ -1,7 +1,7 @@
 @namespace Codeland.QRScanner
 
-<div class="scanner-page">
-    <video id="@_videoElementId" class="scanner-video" autoplay playsinline muted></video>
+<div class="@_containerClass" style="@ContainerStyle">
+    <video id="@_videoElementId" class="@_videoClass" style="@VideoStyle" autoplay playsinline muted></video>
 
     @if (_zoomSupported)
     {

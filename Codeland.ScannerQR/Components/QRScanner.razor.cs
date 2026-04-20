@@ -18,6 +18,8 @@ public partial class QRScanner : IAsyncDisposable
     private double _zoomMin = 1;
     private double _zoomMax = 1;
 
+    // ── Parameters ──────────────────────────────────────────────────────────
+
     [Parameter]
     public bool AutoStart { get; set; } = true;
 
@@ -26,6 +28,32 @@ public partial class QRScanner : IAsyncDisposable
 
     [Parameter]
     public double ZoomValue { get; set; } = 1;
+
+    /// <summary>
+    /// When true (default) the scanner fills the entire viewport (position:fixed, 100vw x 100vh).
+    /// Set to false to let the component size itself via <see cref="Class"/>, <see cref="Style"/>,
+    /// <see cref="Width"/> and <see cref="Height"/>.
+    /// </summary>
+    [Parameter]
+    public bool FullPage { get; set; } = true;
+
+    /// <summary>Extra CSS class(es) applied to the outer container. Used when FullPage is false.</summary>
+    [Parameter]
+    public string? Class { get; set; }
+
+    /// <summary>Inline style applied to the outer container. Used when FullPage is false.</summary>
+    [Parameter]
+    public string? Style { get; set; }
+
+    /// <summary>CSS width of the container (e.g. "640px", "100%"). Ignored when FullPage is true.</summary>
+    [Parameter]
+    public string? Width { get; set; }
+
+    /// <summary>CSS height of the container (e.g. "480px", "50vh"). Ignored when FullPage is true.</summary>
+    [Parameter]
+    public string? Height { get; set; }
+
+    // ── Events ───────────────────────────────────────────────────────────────
 
     [Parameter]
     public EventCallback<double> OnZoomChanged { get; set; }
@@ -36,6 +64,50 @@ public partial class QRScanner : IAsyncDisposable
     [Parameter]
     public EventCallback<string> OnScanStatus { get; set; }
 
+    // ── Computed CSS helpers ─────────────────────────────────────────────────
+
+    private string _containerClass =>
+        FullPage
+            ? $"scanner-page{(string.IsNullOrWhiteSpace(Class) ? "" : " " + Class)}"
+            : $"scanner-container{(string.IsNullOrWhiteSpace(Class) ? "" : " " + Class)}";
+
+    private string _videoClass =>
+        FullPage ? "scanner-video" : "scanner-video-fit";
+
+    private string ContainerStyle
+    {
+        get
+        {
+            if (FullPage)
+            {
+                return Style ?? string.Empty;
+            }
+
+            var parts = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(Width))
+            {
+                parts.Add($"width:{Width}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(Height))
+            {
+                parts.Add($"height:{Height}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(Style))
+            {
+                parts.Add(Style.TrimEnd(';'));
+            }
+
+            return string.Join(";", parts);
+        }
+    }
+
+    private string VideoStyle => string.Empty;
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender || !AutoStart)
@@ -45,6 +117,8 @@ public partial class QRScanner : IAsyncDisposable
 
         await Start();
     }
+
+    // ── Public methods ───────────────────────────────────────────────────────
 
     public async Task Start()
     {
@@ -74,6 +148,8 @@ public partial class QRScanner : IAsyncDisposable
         ZoomValue = zoomValue;
         await JS.InvokeVoidAsync("qrScanner.setZoom", zoomValue);
     }
+
+    // ── Private handlers ─────────────────────────────────────────────────────
 
     private async Task HandleZoomInput(ChangeEventArgs e)
     {

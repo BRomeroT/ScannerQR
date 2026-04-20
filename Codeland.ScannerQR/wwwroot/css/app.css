@@ -208,3 +208,19 @@ code {
 .home-info-sep {
     margin-top: 0.5rem;
 }
+
+/* QRScanner: non-fullpage container */
+.scanner-container {
+    position: relative;
+    overflow: hidden;
+    background: #000;
+    display: block;
+}
+
+/* QRScanner: video fills its container when not fullpage */
+.scanner-video-fit {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
