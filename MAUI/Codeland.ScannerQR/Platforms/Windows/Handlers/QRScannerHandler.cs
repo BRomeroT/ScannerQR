@@ -14,6 +14,9 @@ using WinImage = Microsoft.UI.Xaml.Controls.Image;
 
 namespace Codeland.ScannerQR.Handlers;
 
+/// <summary>
+/// Windows implementation of <see cref="QRScannerView"/> using <see cref="MediaCapture"/> and a frame reader.
+/// </summary>
 public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
 {
     private MediaCapture? _mediaCapture;
@@ -26,6 +29,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
     private bool _renderTaskRunning;
     private bool _isShuttingDown;
 
+    /// <summary>
+    /// Creates the native Windows preview container.
+    /// </summary>
+    /// <returns>The configured Windows grid.</returns>
     protected override WinGrid CreatePlatformView()
     {
         var grid = new WinGrid();
@@ -39,6 +46,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
         return grid;
     }
 
+    /// <summary>
+    /// Connects the handler and initializes the QR decoder state.
+    /// </summary>
+    /// <param name="platformView">The native Windows view.</param>
     protected override void ConnectHandler(WinGrid platformView)
     {
         base.ConnectHandler(platformView);
@@ -58,6 +69,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
             _ = StartCameraAsync();
     }
 
+    /// <summary>
+    /// Disconnects the handler and stops camera processing.
+    /// </summary>
+    /// <param name="platformView">The native Windows view.</param>
     protected override void DisconnectHandler(WinGrid platformView)
     {
         _isShuttingDown = true;
@@ -65,9 +80,20 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
         base.DisconnectHandler(platformView);
     }
 
+    /// <summary>
+    /// Starts the Windows camera pipeline.
+    /// </summary>
     partial void StartCamera() => _ = StartCameraAsync();
+
+    /// <summary>
+    /// Stops the Windows camera pipeline.
+    /// </summary>
     partial void StopCamera() => _ = StopCameraAsync();
 
+    /// <summary>
+    /// Applies zoom to the active Windows camera.
+    /// </summary>
+    /// <param name="zoom">The requested zoom value.</param>
     partial void SetZoom(double zoom)
     {
         if (_isShuttingDown || _mediaCapture?.VideoDeviceController?.ZoomControl == null) return;
@@ -80,6 +106,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
         VirtualView?.RaiseZoomChanged(clamped);
     }
 
+    /// <summary>
+    /// Initializes MediaCapture, the frame reader, and the preview output.
+    /// </summary>
+    /// <returns>A task that completes when startup has finished.</returns>
     private async Task StartCameraAsync()
     {
         if (_isRunning || _isShuttingDown || VirtualView == null) return;
@@ -122,7 +152,6 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
                 return;
             }
 
-            // Create frame reader — let the system choose the best format, we convert later
             _frameReader = await _mediaCapture.CreateFrameReaderAsync(colorSource);
             _frameReader.FrameArrived += OnFrameArrived;
             var status = await _frameReader.StartAsync();
@@ -135,7 +164,6 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
                 return;
             }
 
-            // Create bitmap source on UI thread
             _bitmapSource = new SoftwareBitmapSource();
             if (_previewImage != null)
                 _previewImage.Source = _bitmapSource;
@@ -158,6 +186,11 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
         }
     }
 
+    /// <summary>
+    /// Processes incoming camera frames for preview rendering and QR decoding.
+    /// </summary>
+    /// <param name="sender">The frame reader that produced the frame.</param>
+    /// <param name="args">Frame arrival event data.</param>
     private void OnFrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
         if (_isShuttingDown || VirtualView == null) return;
@@ -167,17 +200,14 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
             using var frameRef = sender.TryAcquireLatestFrame();
             if (frameRef?.VideoMediaFrame == null) return;
 
-            // Get SoftwareBitmap (guaranteed with MemoryPreference.Cpu)
             var frameBitmap = frameRef.VideoMediaFrame.SoftwareBitmap;
             if (frameBitmap == null) return;
 
-            // Convert to BGRA8/Premultiplied (required by SoftwareBitmapSource)
             var converted = (frameBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
                              frameBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
                 ? SoftwareBitmap.Convert(frameBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied)
                 : SoftwareBitmap.Copy(frameBitmap);
 
-            // QR decode (on this background thread)
             try
             {
                 var width = converted.PixelWidth;
@@ -194,11 +224,9 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
             }
             catch { }
 
-            // Swap into back buffer (thread-safe); dispose the old one
             var old = Interlocked.Exchange(ref _backBuffer, converted);
             old?.Dispose();
 
-            // Schedule UI render
             var previewImage = _previewImage;
             var dispatcherQueue = previewImage?.DispatcherQueue;
             if (dispatcherQueue == null) return;
@@ -210,7 +238,6 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
 
                 try
                 {
-                    // Drain back buffer — always render the latest frame
                     SoftwareBitmap? bitmap;
                     while (!_isShuttingDown && (bitmap = Interlocked.Exchange(ref _backBuffer, null)) != null)
                     {
@@ -235,6 +262,11 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, WinGrid>
         catch { }
     }
 
+    /// <summary>
+    /// Stops frame processing, releases MediaCapture resources, and optionally raises a status event.
+    /// </summary>
+    /// <param name="raiseStatus"><see langword="true"/> to raise a stop status message; otherwise, <see langword="false"/>.</param>
+    /// <returns>A task that completes when shutdown is finished.</returns>
     private async Task StopCameraAsync(bool raiseStatus = true)
     {
         try

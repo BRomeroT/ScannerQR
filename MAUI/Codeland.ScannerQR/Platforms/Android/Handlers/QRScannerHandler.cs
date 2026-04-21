@@ -15,6 +15,9 @@ using IZoomState = AndroidX.Camera.Core.IZoomState;
 
 namespace Codeland.ScannerQR.Handlers;
 
+/// <summary>
+/// Android implementation of <see cref="QRScannerView"/> using CameraX for preview, analysis, and zoom control.
+/// </summary>
 public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
 {
     private ProcessCameraProvider? _cameraProvider;
@@ -23,6 +26,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
     private ScaleGestureDetector? _scaleGestureDetector;
     private bool _isRunning;
 
+    /// <summary>
+    /// Creates the native Android preview view.
+    /// </summary>
+    /// <returns>The configured <see cref="PreviewView"/>.</returns>
     protected override PreviewView CreatePlatformView()
     {
         var previewView = new PreviewView(Context)
@@ -35,12 +42,15 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         return previewView;
     }
 
+    /// <summary>
+    /// Connects the MAUI view to its Android platform view and configures gesture and analysis resources.
+    /// </summary>
+    /// <param name="platformView">The native preview view.</param>
     protected override void ConnectHandler(PreviewView platformView)
     {
         base.ConnectHandler(platformView);
         _analysisExecutor = Executors.NewSingleThreadExecutor();
 
-        // Set up pinch-to-zoom gesture
         _scaleGestureDetector = new ScaleGestureDetector(Context, new PinchZoomListener(this));
         platformView.SetOnTouchListener(new ZoomTouchListener(_scaleGestureDetector));
 
@@ -48,6 +58,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
             StartCamera();
     }
 
+    /// <summary>
+    /// Disconnects the handler and releases Android resources.
+    /// </summary>
+    /// <param name="platformView">The native preview view.</param>
     protected override void DisconnectHandler(PreviewView platformView)
     {
         StopCamera();
@@ -56,12 +70,19 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         base.DisconnectHandler(platformView);
     }
 
+    /// <summary>
+    /// Starts the Android camera if it is not already running.
+    /// </summary>
     partial void StartCamera()
     {
         if (_isRunning) return;
         _ = StartCameraWithPermissionAsync();
     }
 
+    /// <summary>
+    /// Requests camera permission when needed and starts the CameraX pipeline.
+    /// </summary>
+    /// <returns>A task that completes when startup has been initiated.</returns>
     private async Task StartCameraWithPermissionAsync()
     {
         var status = await Permissions.CheckStatusAsync<Permissions.Camera>();
@@ -102,6 +123,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         }), ContextCompat.GetMainExecutor(activity));
     }
 
+    /// <summary>
+    /// Binds preview and image-analysis use cases to the current Android lifecycle owner.
+    /// </summary>
+    /// <param name="activity">The current Android activity.</param>
     private void BindCamera(Android.App.Activity activity)
     {
         _cameraProvider?.UnbindAll();
@@ -140,6 +165,9 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         }
     }
 
+    /// <summary>
+    /// Stops the Android camera and releases bound CameraX use cases.
+    /// </summary>
     partial void StopCamera()
     {
         _cameraProvider?.UnbindAll();
@@ -149,6 +177,10 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         VirtualView.RaiseScanStatus("Camera stopped");
     }
 
+    /// <summary>
+    /// Applies a zoom value to the active Android camera.
+    /// </summary>
+    /// <param name="zoom">The requested zoom level.</param>
     partial void SetZoom(double zoom)
     {
         if (_camera == null) return;
@@ -160,11 +192,18 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         VirtualView.RaiseZoomChanged(clamped);
     }
 
+    /// <summary>
+    /// CameraX analyzer that reads the luminance plane and decodes QR codes using ZXing.
+    /// </summary>
     private class QRImageAnalyzer : Java.Lang.Object, ImageAnalysis.IAnalyzer
     {
         private readonly QRScannerView _view;
         private readonly ZXing.BarcodeReaderGeneric _reader;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QRImageAnalyzer"/> class.
+        /// </summary>
+        /// <param name="view">The scanner view that receives decoded results.</param>
         public QRImageAnalyzer(QRScannerView view)
         {
             _view = view;
@@ -180,8 +219,15 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
             };
         }
 
+        /// <summary>
+        /// Gets the preferred analysis resolution for CameraX.
+        /// </summary>
         public Android.Util.Size DefaultTargetResolution => new Android.Util.Size(1280, 720);
 
+        /// <summary>
+        /// Analyzes a camera frame and attempts to decode a QR code.
+        /// </summary>
+        /// <param name="imageProxy">The current CameraX image frame.</param>
         public void Analyze(IImageProxy imageProxy)
         {
             try
@@ -197,7 +243,6 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
                 var height = imageProxy.Height;
                 var rowStride = plane.RowStride;
 
-                // CameraX Y plane often has row padding. Normalize to tightly packed luminance bytes.
                 byte[] luminance;
                 if (rowStride == width)
                 {
@@ -231,12 +276,24 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         }
     }
 
+    /// <summary>
+    /// Handles Android pinch gestures and translates them into camera zoom changes.
+    /// </summary>
     private class PinchZoomListener : ScaleGestureDetector.SimpleOnScaleGestureListener
     {
         private readonly QRScannerHandler _handler;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PinchZoomListener"/> class.
+        /// </summary>
+        /// <param name="handler">The parent scanner handler.</param>
         public PinchZoomListener(QRScannerHandler handler) => _handler = handler;
 
+        /// <summary>
+        /// Applies incremental zoom during a pinch gesture.
+        /// </summary>
+        /// <param name="detector">The active scale gesture detector.</param>
+        /// <returns><see langword="true"/> when the gesture is handled.</returns>
         public override bool OnScale(ScaleGestureDetector detector)
         {
             if (_handler._camera?.CameraInfo.ZoomState.Value is not IZoomState zoomState)
@@ -250,12 +307,25 @@ public partial class QRScannerHandler : ViewHandler<QRScannerView, PreviewView>
         }
     }
 
+    /// <summary>
+    /// Forwards Android touch events to the scale gesture detector.
+    /// </summary>
     private class ZoomTouchListener : Java.Lang.Object, Android.Views.View.IOnTouchListener
     {
         private readonly ScaleGestureDetector _detector;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ZoomTouchListener"/> class.
+        /// </summary>
+        /// <param name="detector">The scale gesture detector to notify.</param>
         public ZoomTouchListener(ScaleGestureDetector detector) => _detector = detector;
 
+        /// <summary>
+        /// Handles Android touch input for pinch zoom.
+        /// </summary>
+        /// <param name="v">The touched view.</param>
+        /// <param name="e">The motion event.</param>
+        /// <returns><see langword="true"/> when the touch event is consumed.</returns>
         public bool OnTouch(Android.Views.View? v, MotionEvent? e)
         {
             if (e != null) _detector.OnTouchEvent(e);
