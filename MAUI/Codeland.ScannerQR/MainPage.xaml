@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:Codeland.ScannerQR.Controls"
+             x:Class="Codeland.ScannerQR.MainPage"
+             Title="QR Scanner">
+
+    <Grid>
+        <!-- Camera preview -->
+        <controls:QRScannerView x:Name="Scanner"
+                                AutoStart="True"
+                                QRDetected="OnQRDetected"
+                                ZoomChanged="OnZoomChanged"
+                                ScanStatusChanged="OnScanStatusChanged" />
+
+        <!-- Scan region indicator -->
+        <Border x:Name="ScanFrame"
+                Stroke="#80FFFFFF"
+                StrokeThickness="2"
+                StrokeShape="RoundRectangle 12"
+                BackgroundColor="Transparent"
+                WidthRequest="250"
+                HeightRequest="250"
+                HorizontalOptions="Center"
+                VerticalOptions="Center" />
+
+        <!-- QR detected flash overlay -->
+        <Border x:Name="FlashOverlay"
+                BackgroundColor="#4000FF00"
+                Opacity="0"
+                InputTransparent="True" />
+
+        <!-- Controls/info panel -->
+        <Border HorizontalOptions="Fill"
+                VerticalOptions="End"
+                Margin="16"
+                Padding="16"
+                BackgroundColor="#B3000000"
+                Stroke="#80FFFFFF"
+                StrokeThickness="1"
+                StrokeShape="RoundRectangle 16">
+            <VerticalStackLayout Spacing="8">
+                <HorizontalStackLayout HorizontalOptions="Start" Spacing="10">
+                    <Button Text="▷" WidthRequest="56" Clicked="OnStartClicked" />
+                    <Button Text="□" WidthRequest="56" Clicked="OnStopClicked" />
+                    <Button Text="⌾" WidthRequest="56" Clicked="OnScanClicked" />
+                    <Button Text="－" WidthRequest="56" Clicked="OnZoomOutClicked" />
+                    <Button Text="＋" WidthRequest="56" Clicked="OnZoomInClicked" />
+                </HorizontalStackLayout>
+
+                <Label Text="Properties" FontAttributes="Bold" TextColor="White" />
+                <Label x:Name="AutoStartValueLabel" TextColor="White" />
+                <Label x:Name="QRValueLabel" TextColor="White" />
+                <Label x:Name="ZoomValueLabel" TextColor="White" />
+
+                <Label Text="Events" FontAttributes="Bold" TextColor="White" Margin="0,6,0,0" />
+                <Label x:Name="OnQRDetectedValueLabel" TextColor="White" />
+                <Label x:Name="OnZoomChangedValueLabel" TextColor="White" />
+                <Label x:Name="OnScanStatusValueLabel" TextColor="White" />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Dialog-style QR result -->
+        <Grid x:Name="QrDialogOverlay"
+              IsVisible="False"
+              BackgroundColor="#80000000"
+              ZIndex="10">
+            <Border HorizontalOptions="Center"
+                    VerticalOptions="Center"
+                    Padding="16"
+                    BackgroundColor="#FF1E1E1E"
+                    Stroke="#FF7C4DFF"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 12"
+                    MaximumWidthRequest="360">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="QR detected" FontAttributes="Bold" TextColor="White" FontSize="16" />
+                    <Label x:Name="DialogQrValueLabel" TextColor="White" LineBreakMode="WordWrap" />
+                    <Button Text="OK" HorizontalOptions="End" Clicked="OnCloseQrDialogClicked" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+
+</ContentPage>

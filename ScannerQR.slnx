@@ -2,4 +2,7 @@
   <Folder Name="/Blazor/">
     <Project Path="Blazor/Codeland.ScannerQR/Codeland.ScannerQR.csproj" />
   </Folder>
+  <Folder Name="/MAUI/">
+    <Project Path="MAUI/Codeland.ScannerQR/Codeland.ScannerQR.csproj" Id="b12670e4-d97e-4fec-896b-748675499089" />
+  </Folder>
 </Solution>
