@@ -11,6 +11,10 @@
            OnZoomChanged="HandleZoomChanged"
            OnScanStatus="HandleScanStatus" />
 
+<div class="qr-detection-cue @(_showDetectionCue ? "qr-detection-cue-visible" : string.Empty)">
+    QR detected
+</div>
+
 <div class="home-overlay-panel">
     <div class="home-wireframe-group">
         <button type="button" class="home-wireframe-btn" title="Start" @onclick="StartScanner">▷</button>

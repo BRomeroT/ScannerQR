@@ -269,6 +269,22 @@ window.qrScanner = (() => {
 
     /**
      * <summary>
+     * Triggers a short vibration pulse when supported by the device.
+     * </summary>
+     */
+    function triggerHapticFeedback() {
+        if (!navigator?.vibrate) {
+            return;
+        }
+
+        try {
+            navigator.vibrate(35);
+        } catch {
+        }
+    }
+
+    /**
+     * <summary>
      * Main detection loop driven by requestAnimationFrame.
      * Emits OnQrDetected for non-duplicate values.
      * </summary>
@@ -299,6 +315,7 @@ window.qrScanner = (() => {
                     if (!isDuplicate) {
                         lastValue = value;
                         lastDetectedAt = now;
+                        triggerHapticFeedback();
                         await dotNetRef.invokeMethodAsync("OnQrDetected", value);
                     }
                 }

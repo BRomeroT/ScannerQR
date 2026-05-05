@@ -39,6 +39,7 @@
 | Primary purpose | Scan QR codes from the device camera |
 | Interaction model | Event-driven host UI |
 | Zoom control | Buttons, programmatic zoom, and pinch gesture where supported |
+| Detection feedback | Visual cue in host UI and short vibration pulse on supported web devices |
 | Supported app models | Blazor WebAssembly, .NET MAUI |
 | Current MAUI targets | Android, iOS, MacCatalyst, Windows |
 | Design rule | Scanner implementation emits state/events; host app owns UI |
@@ -82,6 +83,7 @@
 |---|---|
 | QR detection | Detects QR content from the active camera feed |
 | Duplicate suppression | Repeated scans of the same QR are suppressed for ~1.2 s |
+| Detection feedback | Provides immediate visual and haptic feedback hooks on detection |
 | Zoom feedback | Host app is notified whenever zoom changes |
 | Start / stop lifecycle | Camera session can be started and stopped programmatically |
 | Host-owned UI | Dialogs, labels, alerts, and overlays belong to the consuming app |
@@ -128,6 +130,8 @@ Blazor provides the original web implementation. It is centered on a reusable Ra
 | `AutoStart` | `bool` | `true` | Starts the camera automatically on first render. Set to `false` to control start manually. |
 | `QRValue` | `string` | `""` | The most recently detected QR code value. |
 | `ZoomValue` | `double` | `1.0` | Current camera zoom level. |
+| `CaptureZoomFromFullScreen` | `bool` | `false` | Captures pinch-zoom gestures from the full page when `true`; otherwise uses scanner area. |
+| `ZoomCaptureElementId` | `string?` | `null` | Optional HTML element id used as the pinch-zoom capture target (takes precedence over full-screen mode). |
 | `FullPage` | `bool` | `true` | Makes the component fill the viewport. |
 | `Width` | `string?` | `null` | Custom width when `FullPage` is `false`. |
 | `Height` | `string?` | `null` | Custom height when `FullPage` is `false`. |
@@ -229,6 +233,7 @@ The current host page demonstrates a full scanner UI with:
 | Control buttons | Start, Stop, Scan, Zoom Out, Zoom In |
 | Properties panel | `AutoStart`, `QRValue`, `ZoomValue` |
 | Events panel | `OnQRDetected`, `OnZoomChanged`, `OnScanStatus` |
+| Detection feedback | Brief “QR detected” visual cue and short vibration pulse (when supported by the browser/device) |
 | Dialog | Displays the last detected QR value |
 
 See:
@@ -402,6 +407,8 @@ The sample MAUI page mirrors the Blazor demo by showing:
 - [x] Duplicate QR suppression
 - [x] Host-side sample UI for Blazor and MAUI
 - [x] XML documentation on scanner view and handlers
+- [x] Blazor visual detection cue for QR scans
+- [x] Blazor short vibration feedback on QR detection (supported devices)
 
 ### 🔜 Next
 
@@ -412,7 +419,7 @@ The sample MAUI page mirrors the Blazor demo by showing:
 - [ ] Multiple simultaneous QR detection
 - [ ] QR format filtering
 - [ ] Scan region overlay driven by actual decode crop area
-- [ ] Vibration / sound feedback on supported devices
+- [ ] Vibration / sound feedback on MAUI platforms
 - [ ] Configurable duplicate suppression timeout
 - [ ] Runtime validation on iOS and MacCatalyst devices
 
