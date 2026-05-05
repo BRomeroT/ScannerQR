@@ -33,6 +33,7 @@ window.qrScanner = (() => {
     let isStarting = false;
     let lifecycleBound = false;
     let pinchBound = false;
+    let pinchTarget = null;
 
     let pinchStartDistance = null;
     let pinchStartZoom = null;
@@ -91,35 +92,36 @@ window.qrScanner = (() => {
     }
 
     /**
-     * <summary>Binds pinch gesture handlers to video element.</summary>
+     * <summary>Binds pinch gesture handlers to configured zoom target element.</summary>
      */
     function bindPinch() {
-        if (!video || pinchBound) {
+        if (!pinchTarget || pinchBound) {
             return;
         }
 
-        video.addEventListener("touchstart", onTouchStart, { passive: true });
-        video.addEventListener("touchmove", onTouchMove, { passive: false });
-        video.addEventListener("touchend", onTouchEnd, { passive: true });
-        video.addEventListener("touchcancel", onTouchEnd, { passive: true });
+        pinchTarget.addEventListener("touchstart", onTouchStart, { passive: true });
+        pinchTarget.addEventListener("touchmove", onTouchMove, { passive: false });
+        pinchTarget.addEventListener("touchend", onTouchEnd, { passive: true });
+        pinchTarget.addEventListener("touchcancel", onTouchEnd, { passive: true });
         pinchBound = true;
     }
 
     /**
-     * <summary>Unbinds pinch gesture handlers from video element.</summary>
+     * <summary>Unbinds pinch gesture handlers from configured zoom target element.</summary>
      */
     function unbindPinch() {
-        if (!video || !pinchBound) {
+        if (!pinchTarget || !pinchBound) {
             return;
         }
 
-        video.removeEventListener("touchstart", onTouchStart);
-        video.removeEventListener("touchmove", onTouchMove);
-        video.removeEventListener("touchend", onTouchEnd);
-        video.removeEventListener("touchcancel", onTouchEnd);
+        pinchTarget.removeEventListener("touchstart", onTouchStart);
+        pinchTarget.removeEventListener("touchmove", onTouchMove);
+        pinchTarget.removeEventListener("touchend", onTouchEnd);
+        pinchTarget.removeEventListener("touchcancel", onTouchEnd);
         pinchBound = false;
         pinchStartDistance = null;
         pinchStartZoom = null;
+        pinchTarget = null;
     }
 
     /**
@@ -431,9 +433,12 @@ window.qrScanner = (() => {
      * </summary>
      * <param name="ref">DotNetObjectReference exposing callback methods.</param>
      * <param name="videoId">Target video element id.</param>
+     * <param name="containerId">Scanner container element id.</param>
+     * <param name="captureZoomFromFullScreen">True to capture pinch from the full page.</param>
+     * <param name="zoomCaptureElementId">Optional element id used to capture pinch zoom gestures.</param>
      * <returns>Promise resolved when startup attempt completes.</returns>
      */
-    async function startAuto(ref, videoId) {
+    async function startAuto(ref, videoId, containerId, captureZoomFromFullScreen, zoomCaptureElementId) {
         dotNetRef = ref;
         video = document.getElementById(videoId);
 
@@ -441,6 +446,12 @@ window.qrScanner = (() => {
             await setStatus("Video element not found.");
             return;
         }
+
+        const zoomCaptureElement = zoomCaptureElementId
+            ? document.getElementById(zoomCaptureElementId)
+            : null;
+
+        pinchTarget = zoomCaptureElement ?? (captureZoomFromFullScreen ? document : document.getElementById(containerId) ?? video);
 
         desiredRunning = true;
         bindLifecycle();
